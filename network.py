@@ -1,5 +1,6 @@
 from Crypto.PublicKey import RSA
 from socket import socket, AF_INET, SOCK_STREAM, SOCK_DGRAM
+import threading
 
 class Server:
     def __init__(self, port):
@@ -8,6 +9,7 @@ class Server:
         
         self.ip = s.getsockname()[0]
         self.port = port
+        self.clients = []
     
     def start(self):
         sock = socket(AF_INET, SOCK_STREAM)
@@ -16,10 +18,12 @@ class Server:
 
         while True:
             (clientSock, clientAddr) = sock.accept()
+            t1 = threading.Thread(target = self.serviceClient, args=(clientSock, clientAddr)).start()
 
-            clientSock.send(b"connection successful")
-            msg = clientSock.recv(1024) 
-            print(msg, clientAddr)
+    def serviceClient(self, sock, addr):
+        sock.send(b"connection successful")
+        msg = sock.recv(1024) 
+        print(msg.decode())
 
 if __name__ == "__main__":
     server = Server(9999)
