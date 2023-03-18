@@ -1,4 +1,5 @@
 from socket import socket, AF_INET, SOCK_STREAM
+import argparse
 
 class Client:
     #constructor for the client class 
@@ -49,6 +50,13 @@ class Client:
         self.sock.close()
 
 if __name__ == '__main__':
-    client = Client('10.0.0.182', 9999, "test")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--network", required=True, help="enter the ip address for the network you want to connect to")
+    parser.add_argument("--name", required=True, help="enter the name for the client", )
+    args = parser.parse_args()
+    network = args.network
+    name = args.name
+
+    client = Client(network, 9999, name)
     client.establishConnection()
 

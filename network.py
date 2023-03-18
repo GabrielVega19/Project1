@@ -28,6 +28,8 @@ class Server:
 
     #This is the function that handles each connected client
     def serviceClient(self, sock, addr):
+        print(self.activeClients)
+        print(self.registeredClients)
         while True:
             #this listens for a message to be sent from the client and then switches over the message to detect which operation the client is requesting
             op = sock.recv(1024).decode()
