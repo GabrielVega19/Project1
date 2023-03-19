@@ -1,5 +1,6 @@
 from socket import socket, AF_INET, SOCK_STREAM
 import argparse
+from time import sleep
 
 class Client:
     #constructor for the client class 
@@ -34,7 +35,11 @@ class Client:
     #this function requests all clients connected to the server 
     def fetchClients(self):
         while True:
-            self.sock.send(b"fetch clients")        
+            print("fetching Clients")
+            self.send("fetch clients", "recieved request to fetch clients")
+            clients = self.sock.recv(2048).decode()
+            print(clients)
+            sleep(10)
     
     #this function sends a message to the server and raises an error if it does not reciece the expected return message
     def send(self, msg, expectedRetMsg):
@@ -50,6 +55,7 @@ class Client:
         self.sock.close()
 
 if __name__ == '__main__':
+    #handles the flags for running the program 
     parser = argparse.ArgumentParser()
     parser.add_argument("--network", required=True, help="enter the ip address for the network you want to connect to")
     parser.add_argument("--name", required=True, help="enter the name for the client", )
@@ -57,6 +63,9 @@ if __name__ == '__main__':
     network = args.network
     name = args.name
 
+    #creates the client and then establishes connection
     client = Client(network, 9999, name)
     client.establishConnection()
+    client.fetchClients()
+
 

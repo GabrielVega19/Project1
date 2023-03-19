@@ -1,6 +1,7 @@
 from Crypto.PublicKey import RSA
 from socket import socket, AF_INET, SOCK_STREAM, SOCK_DGRAM
 import threading
+from json import loads, dumps
 
 class Server:
     #constructor for the server, sets up the ip, port and active and registered clients
@@ -28,8 +29,6 @@ class Server:
 
     #This is the function that handles each connected client
     def serviceClient(self, sock, addr):
-        print(self.activeClients)
-        print(self.registeredClients)
         while True:
             #this listens for a message to be sent from the client and then switches over the message to detect which operation the client is requesting
             op = sock.recv(1024).decode()
@@ -52,7 +51,9 @@ class Server:
                         self.registerClient(sock, addr)
                 #this is hit when the client requests all other connected clients
                 case "fetch clients":
-                    print("fetch clients")
+                    sock.send(b"recieved request to fetch clients")
+                    jsonSend = dumps(self.activeClients).encode()
+                    sock.send(jsonSend)
                 #this gets hit when the client requests to close the connection
                 case "close connection":
                     sock.send(b"recieved request to close connection")
