@@ -2,6 +2,7 @@ from Crypto.PublicKey import RSA
 from socket import socket, AF_INET, SOCK_STREAM, SOCK_DGRAM
 import threading
 from json import loads, dumps
+from time import sleep
 
 class Server:
     #constructor for the server, sets up the ip, port and active and registered clients
@@ -53,6 +54,7 @@ class Server:
                 case "fetch clients":
                     sock.send(b"recieved request to fetch clients")
                     jsonSend = dumps(self.activeClients).encode()
+                    sleep(.5)
                     sock.send(jsonSend)
                 #this gets hit when the client requests to close the connection
                 case "close connection":
