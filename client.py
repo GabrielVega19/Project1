@@ -1,6 +1,7 @@
 from socket import socket, AF_INET, SOCK_STREAM
 import argparse
 from time import sleep
+import threading
 
 class Client:
     #constructor for the client class 
@@ -34,12 +35,8 @@ class Client:
 
     #this function requests all clients connected to the server 
     def fetchClients(self):
-        while True:
-            print("fetching Clients")
-            self.send("fetch clients", "recieved request to fetch clients")
-            clients = self.sock.recv(2048).decode()
-            print(clients)
-            sleep(10)
+        self.send("fetch clients", "recieved request to fetch clients")
+        clients = self.sock.recv(2048).decode()
     
     #this function sends a message to the server and raises an error if it does not reciece the expected return message
     def send(self, msg, expectedRetMsg):
@@ -48,6 +45,26 @@ class Client:
         if retMsg != expectedRetMsg:
             raise Exception(f"error sending msg: {msg} to client: {self.ip} with retMsg: {retMsg}")
     
+    #this function starts the two timers for the two expected behaviors in two different threads
+    def startTimedBehavior(self):
+        t1 = threading.Thread(target = self.tenSecTimer).start()
+        t2 = threading.Thread(target = self.fifteenSecTimer).start()
+
+    def tenSecTimer(self):
+        while True:
+            print("ten seconds")
+            sleep(10)
+
+    def fifteenSecTimer(self):
+        while True:
+            print("fifteen seconds")
+            sleep(15)
+
+    def listen(self):
+        while True:
+            print("listening")
+            sleep(1)
+
     #deconstructor for the client class sends message to the server to mark as inactive 
     def __del__(self):
         self.send("close connection", "recieved request to close connection")
@@ -66,6 +83,7 @@ if __name__ == '__main__':
     #creates the client and then establishes connection
     client = Client(network, 9999, name)
     client.establishConnection()
-    client.fetchClients()
+    client.startTimedBehavior()
+    client.listen()
 
 

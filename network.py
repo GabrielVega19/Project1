@@ -65,6 +65,8 @@ class Server:
                     exit()
                 case _:
                     print("server recieved an invalid request")
+                    sock.close()
+                    exit()
     
     #this function preforms the logic for registering a client
     def registerClient(self, sock, addr):
