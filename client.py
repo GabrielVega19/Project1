@@ -10,6 +10,7 @@ class Client:
         self.port = port
         self.name = name
         self.sock = socket(AF_INET, SOCK_STREAM)
+        self.sEvent = threading.Event()
 
     #this function establishes connection to the server
     def establishConnection(self):
@@ -37,6 +38,7 @@ class Client:
     def fetchClients(self):
         self.send("fetch clients", "recieved request to fetch clients")
         clients = self.sock.recv(2048).decode()
+        return clients
     
     #this function sends a message to the server and raises an error if it does not reciece the expected return message
     def send(self, msg, expectedRetMsg):
@@ -47,23 +49,41 @@ class Client:
     
     #this function starts the two timers for the two expected behaviors in two different threads
     def startTimedBehavior(self):
-        t1 = threading.Thread(target = self.tenSecTimer).start()
-        t2 = threading.Thread(target = self.fifteenSecTimer).start()
+        self.t1 = threading.Thread(target = self.tenSecTimer)
+        self.t1.start()
+        self.t2 = threading.Thread(target = self.fifteenSecTimer)
+        self.t2.start()
 
     def tenSecTimer(self):
-        while True:
-            print("ten seconds")
-            sleep(10)
+        sec = 0
+        while not self.sEvent.is_set():
+            if sec >= 10:
+                print(self.fetchClients())
+                sec = 0
+            sleep(1)
+            sec += 1
 
     def fifteenSecTimer(self):
-        while True:
-            print("fifteen seconds")
-            sleep(15)
+        sec = 0
+        while not self.sEvent.is_set():
+            if sec >= 15:
+                print("***************************15 sec ********************")
+                sec = 0
+            sleep(1)
+            sec += 1
 
     def listen(self):
-        while True:
-            print("listening")
-            sleep(1)
+        try:
+            while True:
+                print("***************************1 sec ********************")
+                sleep(1)
+        except KeyboardInterrupt:
+            print("keyboard interupt")
+            self.sEvent.set()
+            self.t1.join()
+            self.t2.join()
+            return
+
 
     #deconstructor for the client class sends message to the server to mark as inactive 
     def __del__(self):
@@ -85,5 +105,6 @@ if __name__ == '__main__':
     client.establishConnection()
     client.startTimedBehavior()
     client.listen()
+    exit(1)
 
 
