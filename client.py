@@ -2,6 +2,7 @@ from socket import socket, AF_INET, SOCK_STREAM
 import argparse
 from time import sleep
 import threading
+from json import loads
 
 class Client:
     #constructor for the client class 
@@ -11,6 +12,7 @@ class Client:
         self.name = name
         self.sock = socket(AF_INET, SOCK_STREAM)
         self.sEvent = threading.Event()
+        self.otherClients = []
 
     #this function establishes connection to the server
     def establishConnection(self):
@@ -37,8 +39,8 @@ class Client:
     #this function requests all clients connected to the server 
     def fetchClients(self):
         self.send("fetch clients", "recieved request to fetch clients")
-        clients = self.sock.recv(2048).decode()
-        return clients
+        clts = self.sock.recv(2048).decode()
+        self.otherClients = loads(clts)
     
     #this function sends a message to the server and raises an error if it does not reciece the expected return message
     def send(self, msg, expectedRetMsg):
@@ -58,7 +60,7 @@ class Client:
         sec = 0
         while not self.sEvent.is_set():
             if sec >= 10:
-                print(self.fetchClients())
+                self.fetchClients()
                 sec = 0
             sleep(1)
             sec += 1
@@ -76,9 +78,10 @@ class Client:
         try:
             while True:
                 print("***************************1 sec ********************")
+                print(self.otherClients)
                 sleep(1)
         except KeyboardInterrupt:
-            print("keyboard interupt")
+            print("Shutting down client.......")
             self.sEvent.set()
             self.t1.join()
             self.t2.join()
