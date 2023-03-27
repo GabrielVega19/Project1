@@ -7,6 +7,7 @@ from json import loads
 class Client:
     #constructor for the client class 
     def __init__(self, ip, port, name):
+        #change to netowrk ip and port and create a port for the listening on client
         self.ip = ip
         self.port = port
         self.name = name
@@ -47,7 +48,7 @@ class Client:
         self.sock.send(msg.encode())
         retMsg = self.sock.recv(1024).decode()
         if retMsg != expectedRetMsg:
-            raise Exception(f"error sending msg: {msg} to client: {self.ip} with retMsg: {retMsg}")
+            raise Exception(f"error sending msg: {msg} to client: {self.ip} with retMsg: {retMsg}")            
     
     #this function starts the two timers for the two expected behaviors in two different threads
     def startTimedBehavior(self):
@@ -61,6 +62,7 @@ class Client:
         while not self.sEvent.is_set():
             if sec >= 10:
                 self.fetchClients()
+                print(self.otherClients)
                 sec = 0
             sleep(1)
             sec += 1
@@ -75,11 +77,17 @@ class Client:
             sec += 1
 
     def listen(self):
+        cSock = socket(AF_INET, SOCK_STREAM)
+        # change to start running on a random port and also pass in with registering client
+        cSock.bind(('0.0.0.0', 8887))
+        cSock.listen(10)
         try:
             while True:
-                print("***************************1 sec ********************")
-                print(self.otherClients)
-                sleep(1)
+                (clientSock, clientAddr) = cSock.accept()
+                message = clientSock.recv(1024)
+                print(f'{clientAddr} -> {message.decode()}')
+                clientSock.send(b'PONG')
+
         except KeyboardInterrupt:
             print("Shutting down client.......")
             self.sEvent.set()

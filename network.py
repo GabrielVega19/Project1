@@ -31,6 +31,7 @@ class Server:
     #This is the function that handles each connected client
     def serviceClient(self, sock, addr):
         while True:
+            print(self.registeredClients)
             #this listens for a message to be sent from the client and then switches over the message to detect which operation the client is requesting
             op = sock.recv(1024).decode()
             print(f"Client {addr}: {op}")
@@ -39,7 +40,7 @@ class Server:
                 case "establish connection":
                     sock.send(b"recieved establish connection request")
                     name = sock.recv(1024).decode()
-                    if name in self.registeredClients:
+                    if name in map(lambda x: x[0], self.registeredClients):
                         if name not in self.activeClients:
                             self.activeClients.append(name)
                             sock.send(b"connection successful")
@@ -53,7 +54,13 @@ class Server:
                 #this is hit when the client requests all other connected clients
                 case "fetch clients":
                     sock.send(b"recieved request to fetch clients")
-                    jsonSend = dumps(self.activeClients).encode()
+                    data = []
+                    for i in self.activeClients:
+                        for j in self.registeredClients:
+                            if i == j[0]:
+                                data.append(j)
+                                break
+                    jsonSend = dumps(data).encode()
                     sleep(.5)
                     sock.send(jsonSend)
                 #this gets hit when the client requests to close the connection
@@ -74,7 +81,7 @@ class Server:
         if op == "register client":
             sock.send(b"recieved register client request")
             name = sock.recv(1024).decode()
-            self.registeredClients.append(name)
+            self.registeredClients.append((name, addr[0]))
             sock.send(f"registered {name} with server".encode())
         else:
             sock.send("failed to register closing connection")
