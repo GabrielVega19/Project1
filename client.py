@@ -23,6 +23,7 @@ class Client:
         retMsg = self.sock.recv(1024).decode()
         match retMsg:
             case "connection successful":
+                print(f"- Connected with name {self.name}")
                 return retMsg
             case "need to register":
                 self.register()
@@ -36,12 +37,16 @@ class Client:
     def register(self):
         self.send("register client", "recieved register client request")
         self.send(self.name, f"registered {self.name} with server")
+        print(f"- Registered with name {self.name}")
 
     #this function requests all clients connected to the server 
     def fetchClients(self):
         self.send("fetch clients", "recieved request to fetch clients")
-        clts = self.sock.recv(2048).decode()
-        self.otherClients = loads(clts)
+        clts = loads(self.sock.recv(2048).decode())
+        self.otherClients = []
+        for i in clts:
+            if i[0] != self.name:
+                self.otherClients.append(i)
     
     #this function sends a message to the server and raises an error if it does not reciece the expected return message
     def send(self, msg, expectedRetMsg):
@@ -62,7 +67,9 @@ class Client:
         while not self.sEvent.is_set():
             if sec >= 10:
                 self.fetchClients()
-                print(self.otherClients)
+                print("- Found client(s):")
+                for i in self.otherClients:
+                    print(f"\t* {i[0]}")
                 sec = 0
             sleep(1)
             sec += 1
@@ -71,7 +78,14 @@ class Client:
         sec = 0
         while not self.sEvent.is_set():
             if sec >= 15:
-                print("***************************15 sec ********************")
+                for i in self.otherClients:
+                    sSock = socket(AF_INET, SOCK_STREAM)
+                    sSock.connect((i[1], 8888))
+                    sSock.send(b"PING")
+                    print(f"> {i[0]}: PING")
+                    received = sSock.recv(1024).decode()
+                    print(f'< {i[0]}: {received}')
+                    sSock.close()
                 sec = 0
             sleep(1)
             sec += 1
@@ -79,14 +93,14 @@ class Client:
     def listen(self):
         cSock = socket(AF_INET, SOCK_STREAM)
         # change to start running on a random port and also pass in with registering client
-        cSock.bind(('0.0.0.0', 8887))
+        cSock.bind(('0.0.0.0', 8888))
         cSock.listen(10)
         try:
             while True:
                 (clientSock, clientAddr) = cSock.accept()
-                message = clientSock.recv(1024)
-                print(f'{clientAddr} -> {message.decode()}')
-                clientSock.send(b'PONG')
+                message = clientSock.recv(1024).decode()
+                if message == "PING":
+                    clientSock.send(b'PONG')
 
         except KeyboardInterrupt:
             print("Shutting down client.......")
