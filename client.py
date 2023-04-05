@@ -3,6 +3,7 @@ import argparse
 from time import sleep
 import threading
 from json import loads
+import ssl
 
 class Client:
     #constructor for the client class 
@@ -17,7 +18,15 @@ class Client:
 
     #this function establishes connection to the server
     def establishConnection(self):
+        #creates the context for the ssl and loads the crts that it will trust from 
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.load_verify_locations('CAKeys/rootCA.crt')
+
+        #wraps the socket with ssl and then connects and retrieves the cert for the server
+        self.sock = context.wrap_socket(self.sock, server_hostname="network server")
         self.sock.connect((self.ip, self.port))
+        cert = self.sock.getpeercert()
+
         self.send("establish connection", "recieved establish connection request")
         self.sock.send(self.name.encode())
         retMsg = self.sock.recv(1024).decode()
