@@ -1,4 +1,4 @@
-from socket import socket, AF_INET, SOCK_STREAM
+from socket import socket, AF_INET, SOCK_STREAM, SHUT_RDWR
 import argparse
 from time import sleep
 import threading
@@ -15,15 +15,15 @@ class Client:
         self.sock = socket(AF_INET, SOCK_STREAM)
         self.sEvent = threading.Event()
         self.otherClients = []
+        self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
     #this function establishes connection to the server
     def establishConnection(self):
         #creates the context for the ssl and loads the crts that it will trust from 
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        context.load_verify_locations('CAKeys/rootCA.crt')
+        self.context.load_verify_locations('CAKeys/rootCA.crt')
 
         #wraps the socket with ssl and then connects and retrieves the cert for the server
-        self.sock = context.wrap_socket(self.sock, server_hostname="network server")
+        self.sock = self.context.wrap_socket(self.sock, server_hostname="network server")
         self.sock.connect((self.ip, self.port))
         cert = self.sock.getpeercert()
 
@@ -98,7 +98,7 @@ class Client:
                 sec = 0
             sleep(1)
             sec += 1
-
+        
     def listen(self):
         cSock = socket(AF_INET, SOCK_STREAM)
         # change to start running on a random port and also pass in with registering client
@@ -116,13 +116,15 @@ class Client:
             self.sEvent.set()
             self.t1.join()
             self.t2.join()
+
+            self.send("close connection", "recieved request to close connection")
+            self.sock.send(self.name.encode())
             return
 
 
     #deconstructor for the client class sends message to the server to mark as inactive 
     def __del__(self):
-        self.send("close connection", "recieved request to close connection")
-        self.sock.send(self.name.encode())
+        self.sock.shutdown(SHUT_RDWR)
         self.sock.close()
 
 if __name__ == '__main__':

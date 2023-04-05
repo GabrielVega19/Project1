@@ -1,5 +1,5 @@
 from Crypto.PublicKey import RSA
-from socket import socket, AF_INET, SOCK_STREAM, SOCK_DGRAM
+from socket import socket, AF_INET, SOCK_STREAM, SOCK_DGRAM, SHUT_RDWR
 import threading
 from json import loads, dumps
 from time import sleep
@@ -53,7 +53,7 @@ class Server:
                             sock.send(b"connection successful")
                         else:
                             sock.send(f"Client with the name {name} is already connected".encode())
-                            sock.shutdown(socket.SHUT_RDWR)
+                            sock.shutdown(SHUT_RDWR)
                             sock.close()
                             exit()
                     else:
@@ -76,12 +76,12 @@ class Server:
                     sock.send(b"recieved request to close connection")
                     rem = sock.recv(1024).decode()
                     self.activeClients.remove(rem)
-                    sock.shutdown(socket.SHUT_RDWR)
+                    sock.shutdown(SHUT_RDWR)
                     sock.close()
                     exit()
                 case _:
                     print("server recieved an invalid request")
-                    sock.shutdown(socket.SHUT_RDWR)
+                    sock.shutdown(SHUT_RDWR)
                     sock.close()
                     exit()
     
@@ -95,6 +95,7 @@ class Server:
             sock.send(f"registered {name} with server".encode())
         else:
             sock.send("failed to register closing connection")
+            sock.shutdown(SHUT_RDWR)
             sock.close()
             exit()
 
