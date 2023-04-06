@@ -2,8 +2,10 @@ from socket import socket, AF_INET, SOCK_STREAM, SHUT_RDWR
 import argparse
 from time import sleep
 import threading
-from json import loads
+from json import loads, dumps
 import ssl
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 
 class Client:
     #constructor for the client class 
@@ -25,17 +27,35 @@ class Client:
         #wraps the socket with ssl and then connects and retrieves the cert for the server
         self.sock = self.context.wrap_socket(self.sock, server_hostname="network server")
         self.sock.connect((self.ip, self.port))
-        cert = self.sock.getpeercert()
 
+        #sends the message that the client wants to esablish connection 
         self.send("establish connection", "recieved establish connection request")
         self.sock.send(self.name.encode())
+        
+        #gets a message back and switches over it to check if successful or needs to register or there was an error
         retMsg = self.sock.recv(1024).decode()
         match retMsg:
+            #if successful then it opens the client keys to use for encryption 
             case "connection successful":
                 print(f"- Connected with name {self.name}")
-                return retMsg
+                with open("ClientKeys/client.key", "rb") as file:
+                    self.privKey = RSA.import_key(file.read())
+                with open("ClientKeys/client.pub", "rb") as file:
+                    self.pubKey = RSA.import_key(file.read())
+            
+            #if if you need to register then it will generate the keys for the client first and then register itself and send them over to the server
             case "need to register":
+                #generates and stores keys
+                self.privKey = RSA.generate(2048)
+                self.pubKey = self.privKey.public_key()
+                with open("ClientKeys/client.pub", "wb") as file:
+                    file.write(self.pubKey.export_key())
+                with open("ClientKeys/client.key", "wb") as file:
+                    file.write(self.privKey.export_key())
+
+                #attempts to register itself
                 self.register()
+
                 #attempts to connect again after registering
                 self.send("establish connection", "recieved establish connection request")
                 self.send(self.name, "connection successful")
@@ -44,8 +64,12 @@ class Client:
 
     #this function sends the stuff nessisary to register itself with the server
     def register(self):
+        #creates a dictionary object with the information to register yourself
+        data = {"name": self.name, "pubKey": self.pubKey.export_key().hex()}
+
+        #sends the message over that it wants to register itself and then sends over the data dumped to a json format
         self.send("register client", "recieved register client request")
-        self.send(self.name, f"registered {self.name} with server")
+        self.send(dumps(data), f"registered {self.name} with server")
         print(f"- Registered with name {self.name}")
 
     #this function requests all clients connected to the server 

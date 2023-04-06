@@ -38,7 +38,7 @@ class Server:
     #This is the function that handles each connected client
     def serviceClient(self, sock, addr):
         while True:
-            print(self.activeClients)
+            print(self.activeClients, self.registeredClients)
             #this listens for a message to be sent from the client and then switches over the message to detect which operation the client is requesting
             op = sock.recv(1024).decode()
             print(f"Client {addr}: {op}")
@@ -66,7 +66,7 @@ class Server:
                     for i in self.activeClients:
                         for j in self.registeredClients:
                             if i == j[0]:
-                                data.append(j)
+                                data.append([j[0], [1]])
                                 break
                     jsonSend = dumps(data).encode()
                     sleep(.5)
@@ -90,9 +90,9 @@ class Server:
         op = sock.recv(1024).decode()
         if op == "register client":
             sock.send(b"recieved register client request")
-            name = sock.recv(1024).decode()
-            self.registeredClients.append((name, addr[0]))
-            sock.send(f"registered {name} with server".encode())
+            data = loads(sock.recv(2048))
+            self.registeredClients.append((data["name"], addr[0], bytes.fromhex(data["pubKey"])))
+            sock.send(f"registered {data['name']} with server".encode())
         else:
             sock.send("failed to register closing connection")
             sock.shutdown(SHUT_RDWR)
