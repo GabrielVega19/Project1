@@ -24,7 +24,7 @@ class Client:
         #creates the context for the ssl and loads the crts that it will trust from 
         self.context.load_verify_locations('CAKeys/rootCA.crt')
 
-        #wraps the socket with ssl and then connects and retrieves the cert for the server
+        #wraps the socket with ssl and then connects 
         self.sock = self.context.wrap_socket(self.sock, server_hostname="network server")
         self.sock.connect((self.ip, self.port))
 
