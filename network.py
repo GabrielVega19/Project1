@@ -47,9 +47,10 @@ class Server:
                     sock.send(b"recieved establish connection request")
                     name = sock.recv(1024).decode()
                     if name in map(lambda x: x[0], self.registeredClients):
-                        if name not in self.activeClients:
-                            self.activeClients.append(name)
+                        if name not in map(lambda x: x[0], self.activeClients):
                             sock.send(b"connection successful")
+                            cPort = int.from_bytes(sock.recv(256), 'big')
+                            self.activeClients.append((name, cPort))
                         else:
                             sock.send(f"Client with the name {name} is already connected".encode())
                             sock.shutdown(SHUT_RDWR)
@@ -64,8 +65,8 @@ class Server:
                     data = []
                     for i in self.activeClients:
                         for j in self.registeredClients:
-                            if i == j[0]:
-                                data.append([j[0], j[1], j[2].hex()])
+                            if i[0] == j[0]:
+                                data.append([j[0], j[1], j[2].hex(), i[1]])
                                 break
                     jsonSend = dumps(data).encode()
                     sleep(.5)
@@ -74,7 +75,9 @@ class Server:
                 case "close connection":
                     sock.send(b"recieved request to close connection")
                     rem = sock.recv(1024).decode()
-                    self.activeClients.remove(rem)
+                    for i in self.activeClients:
+                        if i[0] == rem:
+                            self.activeClients.remove(i)
                     sock.shutdown(SHUT_RDWR)
                     sock.close()
                     exit()
