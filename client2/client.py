@@ -135,7 +135,7 @@ class Client:
     def listen(self):
         cSock = socket(AF_INET, SOCK_STREAM)
         # if have time change to start running on a random port and also pass in with registering client
-        cSock.bind(('0.0.0.0', 8888))
+        cSock.bind(('0.0.0.0', 8887))
         cSock.listen(10)
         try:
             while True:

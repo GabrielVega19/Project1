@@ -119,7 +119,7 @@ class Client:
             if sec >= 15:
                 for i in self.otherClients:
                     sSock = socket(AF_INET, SOCK_STREAM)
-                    sSock.connect((i[1], 8888))
+                    sSock.connect((i[1], 8887))
                     
                     #sends ping to the server
                     self.secureSend(sSock, "PING", i[0])
