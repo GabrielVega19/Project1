@@ -193,7 +193,7 @@ class Client:
                 if verifier.verify(hash, data[1]):
                     return plaintext.decode(), data[0]
 
-        return "error", "error"
+        return "error", "error" 
 
                 
 
