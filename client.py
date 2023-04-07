@@ -81,7 +81,7 @@ class Client:
     #this function requests all clients connected to the server 
     def fetchClients(self):
         self.send("fetch clients", "recieved request to fetch clients")
-        clts = loads(self.sock.recv(2048).decode())
+        clts = loads(self.sock.recv(8192).decode())
         self.otherClients = []
         for i in clts:
             if i[0] != self.name:
