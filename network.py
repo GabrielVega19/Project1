@@ -65,7 +65,7 @@ class Server:
                     for i in self.activeClients:
                         for j in self.registeredClients:
                             if i == j[0]:
-                                data.append([j[0], j[1]])
+                                data.append([j[0], j[1], j[2].hex()])
                                 break
                     jsonSend = dumps(data).encode()
                     sleep(.5)

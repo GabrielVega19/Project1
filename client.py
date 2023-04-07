@@ -6,6 +6,8 @@ from json import loads, dumps
 import ssl
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Hash import SHA3_512
+from Crypto.Signature import PKCS1_v1_5
 
 class Client:
     #constructor for the client class 
@@ -78,8 +80,8 @@ class Client:
         clts = loads(self.sock.recv(2048).decode())
         self.otherClients = []
         for i in clts:
-            if i[0] != self.name:
-                self.otherClients.append(i)
+            # if i[0] != self.name:
+            self.otherClients.append([i[0], i[1], bytes.fromhex(i[2])])
     
     #this function sends a message to the server and raises an error if it does not reciece the expected return message
     def send(self, msg, expectedRetMsg):
@@ -114,10 +116,13 @@ class Client:
                 for i in self.otherClients:
                     sSock = socket(AF_INET, SOCK_STREAM)
                     sSock.connect((i[1], 8888))
-                    sSock.send(b"PING")
+                    
+                    #sends ping to the server
+                    self.secureSend(sSock, "ping", i[0])
                     print(f"> {i[0]}: PING")
-                    received = sSock.recv(1024).decode()
-                    print(f'< {i[0]}: {received}')
+                    received, name = self.secureRecieve(sSock, 2048)
+                    print(f'< {name}: {received}')
+
                     sSock.close()
                 sec = 0
             sleep(1)
@@ -125,15 +130,20 @@ class Client:
         
     def listen(self):
         cSock = socket(AF_INET, SOCK_STREAM)
-        # change to start running on a random port and also pass in with registering client
+        # if have time change to start running on a random port and also pass in with registering client
         cSock.bind(('0.0.0.0', 8888))
         cSock.listen(10)
         try:
             while True:
                 (clientSock, clientAddr) = cSock.accept()
-                message = clientSock.recv(1024).decode()
+
+                #waits to reviece the ping message and then returns pong
+                message, name = self.secureRecieve(clientSock, 2048)
                 if message == "PING":
-                    clientSock.send(b'PONG')
+                    self.secureSend(clientSock, "PONG", name)
+                    clientSock.close()
+                else: 
+                    print("could not verify message from sender")
 
         except KeyboardInterrupt:
             print("Shutting down client.......")
@@ -144,6 +154,44 @@ class Client:
             self.send("close connection", "recieved request to close connection")
             self.sock.send(self.name.encode())
             return
+
+    #securely sends a string between clients 
+    def secureSend(self, sock, message, name):
+        for i in self.otherClients:
+            if i[0] == name:
+                #creates the hash object for the message
+                hash = SHA3_512.new(message.encode())
+                #signes the hash
+                sig = PKCS1_v1_5.new(self.privKey).sign(hash)
+                #encodes the message
+                ciphertext = PKCS1_OAEP.new(RSA.import_key(i[2])).encrypt(message.encode())
+                #puts everything into a touple and then sends over
+                data = dumps((self.name, sig.hex(), ciphertext.hex()))
+                sock.send(data.encode())
+
+    #secure recieve
+    def secureRecieve(self, sock, numBytes):
+        #recieves the initial message
+        mes = loads(sock.recv(numBytes).decode())
+        #parses it into a touple 
+        data = (mes[0], bytes.fromhex(mes[1]), bytes.fromhex(mes[2]))
+        #loops through the array of clients to find the information for the one who sent it
+        for i in self.otherClients:
+            if i[0] == data[0]:
+                print(i)
+                #decodes the message with the client priv key
+                plaintext = PKCS1_OAEP.new(self.privKey).decrypt(data[2])
+                #creates the hash for verification
+                hash = SHA3_512.new(plaintext)
+                #creates the verifyer object with the pubkey for the sender
+                verifier = PKCS1_v1_5.new(RSA.import_key(i[2]))
+                #if it can verify the signature then it returns the message and the senders name
+                if verifier.verify(hash, data[1]):
+                    return plaintext.decode(), data[0]
+        print("weird error")
+        return "error", "error"
+
+                
 
 
     #deconstructor for the client class sends message to the server to mark as inactive 
