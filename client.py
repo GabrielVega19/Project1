@@ -41,9 +41,13 @@ class Client:
             case "connection successful":
                 print(f"- Connected with name {self.name}")
                 with open("ClientKeys/client.key", "rb") as file:
-                    self.privKey = RSA.import_key(file.read())
+                    k = file.read()
+                    self.privKey = RSA.import_key(k)
+                    print(k)
                 with open("ClientKeys/client.pub", "rb") as file:
-                    self.pubKey = RSA.import_key(file.read())
+                    pk = file.read()
+                    print(k)
+                    self.pubKey = RSA.import_key(pk)
             
             #if if you need to register then it will generate the keys for the client first and then register itself and send them over to the server
             case "need to register":
@@ -178,7 +182,6 @@ class Client:
         #loops through the array of clients to find the information for the one who sent it
         for i in self.otherClients:
             if i[0] == data[0]:
-                print(i)
                 #decodes the message with the client priv key
                 plaintext = PKCS1_OAEP.new(self.privKey).decrypt(data[2])
                 #creates the hash for verification
@@ -186,9 +189,10 @@ class Client:
                 #creates the verifyer object with the pubkey for the sender
                 verifier = PKCS1_v1_5.new(RSA.import_key(i[2]))
                 #if it can verify the signature then it returns the message and the senders name
+                print(i[2])
                 if verifier.verify(hash, data[1]):
                     return plaintext.decode(), data[0]
-        print("weird error")
+
         return "error", "error"
 
                 
