@@ -148,6 +148,7 @@ class Client:
                     clientSock.close()
                 else: 
                     print("could not verify message from sender")
+                    print(message, name)
 
         except KeyboardInterrupt:
             print("Shutting down client.......")
@@ -193,9 +194,6 @@ class Client:
                     return plaintext.decode(), data[0]
 
         return "error", "error" 
-
-                
-
 
     #deconstructor for the client class sends message to the server to mark as inactive 
     def __del__(self):
